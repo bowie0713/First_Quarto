@@ -1,0 +1,138 @@
+---
+title: "UCSB OPEN UNVERSITY S23 REPORT"
+format: 
+  revealjs:
+    #embed-resources: true
+    theme: moon
+    preview-links: auto
+    chalkboard: 
+      boardmarker-width: 5
+    code-fold: true
+editor: visual
+jupyter: python3
+engine: knitr
+project:
+  type: website
+  output-dir: docs
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished presentation. To learn more about Quarto presentations see <https://quarto.org/docs/presentations/>.
+
+## Bullets
+
+When you click the **Render** button a document will be generated that includes:
+
+-   Content authored with markdown
+-   Output from executable code
+
+## Code
+
+When you click the **Render** button a presentation will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{python}
+print(1+1)
+```
+## First Step
+
+::: {.incremental}
+- Import excel file
+- Choose specific sheet we want to work on
+- Get S23 and Raw Data Files
+- Show result (the first five)
+As shown below
+```{python}
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import plotly.express as px 
+df = pd.read_excel("/Users/bowie/Downloads/Open University Application - PaCE International 2 (2).xlsx", sheet_name = None)
+df_raw = df.get("Raw Data")
+df_s23 = df.get("S23")
+df_s23.head()
+
+```
+:::
+
+## Next Step
+
+:::{.incremental}
+
+Then I drop unnecessary columns and add reason deny to my data frame
+```{python, echo = TRUE}
+df_s23 = df_s23.drop(['PaCE ID #', 'PaCE ID values only (Ctrl + Shift + V)', 'UCSB Net ID if Student', 'UCSB Net ID if Staff', 'Corrected Enroll Code/Section #'], axis = 1)
+df_s23 = df_s23.iloc[:727]
+df_raw_reason = df_raw.iloc[585:]
+x = df_raw_reason['Reason_for_deny']
+x = x.reset_index()
+x = x.drop(['index'], axis = 1)
+df_s23['Reason_deny'] = x
+df_s23.head()
+```
+
+:::
+
+## Cleaning Data
+
+:::{.incremental}
+
+- Extract unnecessary characters in the Course_ID column
+  * This allows us to analyze the data 
+```{python, echo = TRUE}
+df_s23['Course_ID'] = df_s23['Course_ID'].str.replace('\t', '')
+df_s23.head()
+```
+
+:::
+
+# Number of People Deny From Each Computer Science Course
+
+## Filter Data
+:::{.incremental}
+* Filter every CMPSC courses
+```{python, echo = FALSE}
+df_s23_cmpsc = df_s23[df_s23['Course_ID'].str.contains("CMPSC")]
+df_s23_cmpsc_deny = df_s23_cmpsc.query("Status == 'Deny'")
+df_s23_cmpsc_deny['Course_ID'].head()
+```
+* Fill in missing values
+```{python, echo = TRUE}
+df_s23_cmpsc_deny['Reason_deny'] = df_s23_cmpsc_deny['Reason_deny'].fillna('None')
+```
+:::
+
+## Show Reason Deny for Each Course
+
+```{python}
+df_s23_cmpsc_deny.groupby(['Reason_deny', 'Course_ID']).size()
+```
+
+```{python}
+#| echo: true
+#| output-location: slide
+df_s23_cmpsc_deny.groupby('Reason_deny').size()
+```
+
+```{python}
+#| echo: true
+#| output-location: slide
+df_s23_cmpsc_deny.groupby('Course_ID').size()
+```
+
+## Graph
+
+```{python, echo = TRUE}
+y = df_s23_cmpsc_deny.groupby('Course_ID')['Last_Name'].count() # This is everyone (There's more ppl cuz there's no NA values)
+y = y.sort_values(ascending = False)
+y.plot.barh(color = 'lawngreen')
+plt.xlabel('Number of Students Deny')
+plt.ylabel('Course ID')
+plt.title('Number of Students Deny From Each Computer Science Courses in Spring 2023')
+for i, v in enumerate(y):
+  plt.text(v + 0.05, i, str(v))
+```
+
+# PSTAT Course Deny
+
+
